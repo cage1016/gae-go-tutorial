@@ -2,5 +2,8 @@ dispatch:
   - url: "*/favicon.ico"
     module: default
 
+  - url: "*/api/foo*"
+    module: foo
+
   - url: "gae-lab-001.appspot.com/"
     module: default

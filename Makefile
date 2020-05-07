@@ -12,6 +12,14 @@ else
 	gcloud app deploy --version ${VERSION} --project ${PROJECT} -q website/app.yaml
 endif
 
+## deploy_foo [v=version-name]: deploy foo service
+deploy_foo:
+ifdef v
+	gcloud app deploy --version ${v} --project ${PROJECT} -q cmd/foo/app.yaml
+else
+	gcloud app deploy --version ${VERSION} --project ${PROJECT} -q cmd/foo/app.yaml
+endif
+
 ## deploy_dispatch: deploy disptach
 deploy_dispatch:
 	gcloud app deploy --project ${PROJECT} -q dispatch.yaml
