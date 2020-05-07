@@ -1,0 +1,6 @@
+dispatch:
+  - url: "*/favicon.ico"
+    module: default
+
+  - url: "gae-lab-001.appspot.com/"
+    module: default
