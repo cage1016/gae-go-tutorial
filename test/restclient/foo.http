@@ -1,8 +1,10 @@
-### get options
-
-POST https://gae-lab-001.appspot.com/api/foo/foo  HTTP/1.1
+### insert foo
+POST https://gae-lab-001.appspot.com/api/foo/insert  HTTP/1.1
 Content-Type: application/json
 
 {
     "s": "foo"
 }
+
+### list foo
+GET https://gae-lab-001.appspot.com/api/foo/list?offset=0&limit=10  HTTP/1.1

@@ -47,7 +47,7 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{`
 					create table if not exists foos
 					(
-						id varchar(10) not null
+						id varchar(21) not null
 							constraint foos_pkey
 								primary key,
 						value varchar(254) not null,

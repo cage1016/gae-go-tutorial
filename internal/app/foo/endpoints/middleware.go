@@ -25,13 +25,3 @@ func LoggingMiddleware(logger log.Logger) endpoint.Middleware {
 		}
 	}
 }
-
-// AuthnMiddleware returns an endpoint middleware that apply authentication func
-func AuthnMiddleware(n endpoint.Middleware, endpoints Endpoints) Endpoints {
-	return endpoints
-}
-
-// AuthzMiddleware returns an endpoint middleware that apply authorization func (opa rbac)
-func AuthzMiddleware(z func(action string, resource string) endpoint.Middleware, endpoints Endpoints) Endpoints {
-	return endpoints
-}

@@ -3,10 +3,9 @@ package transports
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
-	"strings"
+	"strconv"
 
 	kitjwt "github.com/go-kit/kit/auth/jwt"
 	"github.com/go-kit/kit/log"
@@ -14,6 +13,7 @@ import (
 	"github.com/go-zoo/bone"
 
 	"github.com/cage1016/gae-lab-001/internal/app/foo/endpoints"
+	"github.com/cage1016/gae-lab-001/internal/app/foo/service"
 	"github.com/cage1016/gae-lab-001/internal/pkg/errors"
 	"github.com/cage1016/gae-lab-001/internal/pkg/responses"
 )
@@ -21,18 +21,6 @@ import (
 const (
 	contentType string = "application/json"
 )
-
-func JSONErrorDecoder(r *http.Response) error {
-	contentType := r.Header.Get("Content-Type")
-	if !strings.Contains(contentType, "application/json") {
-		return fmt.Errorf("expected JSON formatted error, got Content-Type %s", contentType)
-	}
-	var w responses.ErrorWrapper
-	if err := json.NewDecoder(r.Body).Decode(&w); err != nil {
-		return err
-	}
-	return errors.New(w.Error)
-}
 
 // NewHTTPHandler returns a handler that makes a set of endpoints available on
 // predefined paths.
@@ -43,33 +31,59 @@ func NewHTTPHandler(endpoints endpoints.Endpoints, logger log.Logger) http.Handl
 	}
 
 	m := bone.New()
-	m.Post("/api/foo/foo", httptransport.NewServer(
-		endpoints.FooEndpoint,
-		decodeHTTPFooRequest,
+	m.Post("/api/foo/insert", httptransport.NewServer(
+		endpoints.InsertEndpoint,
+		decodeHTTPInsertRequest,
+		encodeJSONResponse,
+		append(options, httptransport.ServerBefore(kitjwt.HTTPToContext()))...,
+	))
+	m.Get("/api/foo/list", httptransport.NewServer(
+		endpoints.ListEndpoint,
+		decodeHTTPListRequest,
 		encodeJSONResponse,
 		append(options, httptransport.ServerBefore(kitjwt.HTTPToContext()))...,
 	))
 	return m
 }
 
-// decodeHTTPFooRequest is a transport/http.DecodeRequestFunc that decodes a
+// decodeHTTPInsertRequest is a transport/http.DecodeRequestFunc that decodes a
 // JSON-encoded request from the HTTP request body. Primarily useful in a server.
-func decodeHTTPFooRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var req endpoints.FooRequest
+func decodeHTTPInsertRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var req endpoints.InsertRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	return req, err
 }
 
+// decodeHTTPListRequest is a transport/http.DecodeRequestFunc that decodes a
+// JSON-encoded request from the HTTP request body. Primarily useful in a server.
+func decodeHTTPListRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var req endpoints.ListRequest
+	var err error
+	req.Offset, err = readUintQuery(r, "offset", 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Limit, err = readUintQuery(r, "limit", 10)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
 func httpEncodeError(_ context.Context, err error, w http.ResponseWriter) {
 	code := http.StatusInternalServerError
 	var message string
 	var errs []errors.Errors
 	w.Header().Set("Content-Type", contentType)
 
+	// HTTP
 	switch errorVal := err.(type) {
 	case errors.Error:
 		switch {
-		// TODO write your own custom error check here
+		case errors.Contains(errorVal, service.ErrInvalidQueryParams),
+			errors.Contains(errorVal, service.ErrMalformedEntity):
+			code = http.StatusBadRequest
 		}
 
 		if errorVal.Msg() != "" {
@@ -119,4 +133,23 @@ func encodeJSONResponse(_ context.Context, w http.ResponseWriter, response inter
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func readUintQuery(r *http.Request, key string, def uint64) (uint64, error) {
+	vals := bone.GetQuery(r, key)
+	if len(vals) > 1 {
+		return 0, service.ErrInvalidQueryParams
+	}
+
+	if len(vals) == 0 {
+		return def, nil
+	}
+
+	strval := vals[0]
+	val, err := strconv.ParseUint(strval, 10, 64)
+	if err != nil {
+		return 0, service.ErrInvalidQueryParams
+	}
+
+	return val, nil
 }

@@ -14,6 +14,8 @@ import (
 	"github.com/gomurphyx/sqlx"
 
 	"github.com/cage1016/gae-lab-001/internal/app/foo/endpoints"
+	"github.com/cage1016/gae-lab-001/internal/app/foo/nanoid"
+	foopostgres "github.com/cage1016/gae-lab-001/internal/app/foo/postgres"
 	"github.com/cage1016/gae-lab-001/internal/app/foo/service"
 	"github.com/cage1016/gae-lab-001/internal/app/foo/transports"
 	"github.com/cage1016/gae-lab-001/internal/pkg/postgres"
@@ -34,9 +36,9 @@ const (
 	defDBSSLKey      = ""
 	defDBSSLRootCert = ""
 
-	envServiceName   = "QS_SERVICE_NAME"
-	envLogLevel      = "QS_LOG_LEVEL"
-	envServiceHost   = "QS_SERVICE_HOST"
+	envServiceName   = "SERVICE_NAME"
+	envLogLevel      = "LOG_LEVEL"
+	envServiceHost   = "SERVICE_HOST"
 	envHTTPPort      = "PORT"
 	envDBHost        = "DB_HOST"
 	envDBPort        = "DB_PORT"
@@ -84,7 +86,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	service := NewServer(logger)
+	service := NewServer(db, logger)
 	endpoints := endpoints.New(service, logger)
 
 	wg := &sync.WaitGroup{}
@@ -142,9 +144,10 @@ func connectToDB(cfg postgres.Config, logger log.Logger) *sqlx.DB {
 	return db
 }
 
-func NewServer(logger log.Logger) service.FooService {
-	service := service.New(logger)
-	return service
+func NewServer(db *sqlx.DB, logger log.Logger) service.FooService {
+	repo := foopostgres.New(db, logger)
+	idpNano := nanoid.New()
+	return service.New(repo, idpNano, logger)
 }
 
 func startHTTPServer(ctx context.Context, wg *sync.WaitGroup, endpoints endpoints.Endpoints, port string, logger log.Logger) {
