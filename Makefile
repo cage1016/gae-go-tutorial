@@ -20,6 +20,14 @@ else
 	gcloud app deploy --version ${VERSION} --project ${PROJECT} -q cmd/foo/app.yaml
 endif
 
+## deploy_count [v=version-name]: deploy count service
+deploy_count:
+ifdef v
+	gcloud app deploy --version ${v} --project ${PROJECT} -q cmd/count/app.yaml
+else
+	gcloud app deploy --version ${VERSION} --project ${PROJECT} -q cmd/count/app.yaml
+endif
+
 ## deploy_dispatch: deploy disptach
 deploy_dispatch:
 	gcloud app deploy --project ${PROJECT} -q dispatch.yaml

@@ -1,0 +1,2 @@
+### count
+GET https://gae-lab-001.appspot.com/api/count/count  HTTP/1.1

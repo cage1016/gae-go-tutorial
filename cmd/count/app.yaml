@@ -1,0 +1,15 @@
+service: count
+
+runtime: go112
+
+handlers:
+- url: /.*
+  script: auto
+  secure: always
+
+vpc_access_connector:
+  name: projects/gae-lab-001/locations/us-central1/connectors/redis-1-connector
+
+env_variables:
+  REDIS_HOST: 10.109.30.115
+  REDIS_PORT: 6379

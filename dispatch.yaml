@@ -5,5 +5,8 @@ dispatch:
   - url: "*/api/foo*"
     module: foo
 
+  - url: "*/api/count*"
+    module: count
+
   - url: "gae-lab-001.appspot.com/"
     module: default

@@ -6,6 +6,7 @@ require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v0.0.0-20200504171905-7e668d9ad0ba
 	github.com/go-kit/kit v0.10.0
 	github.com/go-zoo/bone v1.3.0
+	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gomurphyx/sqlx v1.3.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.5.2
