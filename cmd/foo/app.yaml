@@ -6,3 +6,10 @@ handlers:
 - url: /.*
   script: auto
   secure: always
+
+env_variables:
+  DB_HOST: gae-lab-001:asia-east1:demo
+  DB_PORT: 5432
+  DB_USER: postgres
+  DB_PASS: password
+  DB: postgres

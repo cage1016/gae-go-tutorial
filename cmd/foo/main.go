@@ -11,21 +11,42 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gomurphyx/sqlx"
 
 	"github.com/cage1016/gae-lab-001/internal/app/foo/endpoints"
 	"github.com/cage1016/gae-lab-001/internal/app/foo/service"
 	"github.com/cage1016/gae-lab-001/internal/app/foo/transports"
+	"github.com/cage1016/gae-lab-001/internal/pkg/postgres"
 )
 
 const (
-	defServiceName string = "foo"
-	defLogLevel    string = "error"
-	defServiceHost string = "localhost"
-	defHTTPPort    string = "8180"
-	envServiceName string = "QS_SERVICE_NAME"
-	envLogLevel    string = "QS_LOG_LEVEL"
-	envServiceHost string = "QS_SERVICE_HOST"
-	envHTTPPort    string = "PORT"
+	defServiceName   = "foo"
+	defLogLevel      = "error"
+	defServiceHost   = "localhost"
+	defHTTPPort      = "8180"
+	defDBHost        = "gae-lab-001:asia-east1:demo"
+	defDBPort        = "5432"
+	defDBUser        = "postgres"
+	defDBPass        = "password"
+	defDBName        = "postgres"
+	defDBSSLMode     = "disable"
+	defDBSSLCert     = ""
+	defDBSSLKey      = ""
+	defDBSSLRootCert = ""
+
+	envServiceName   = "QS_SERVICE_NAME"
+	envLogLevel      = "QS_LOG_LEVEL"
+	envServiceHost   = "QS_SERVICE_HOST"
+	envHTTPPort      = "PORT"
+	envDBHost        = "DB_HOST"
+	envDBPort        = "DB_PORT"
+	envDBUser        = "DB_USER"
+	envDBPass        = "DB_PASS"
+	envDBName        = "DB"
+	envDBSSLMode     = "DB_SSL_MODE"
+	envDBSSLCert     = "DB_SSL_CERT"
+	envDBSSLKey      = "DB_SSL_KEY"
+	envDBSSLRootCert = "DB_SSL_ROOT_CERT"
 )
 
 type config struct {
@@ -33,6 +54,7 @@ type config struct {
 	logLevel    string
 	serviceHost string
 	httpPort    string
+	dbConfig    postgres.Config
 }
 
 // Env reads specified environment variable. If no value has been found,
@@ -59,6 +81,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	db := connectToDB(cfg.dbConfig, logger)
+	defer db.Close()
+
 	service := NewServer(logger)
 	endpoints := endpoints.New(service, logger)
 
@@ -77,11 +102,44 @@ func main() {
 }
 
 func loadConfig(logger log.Logger) (cfg config) {
+	dbConfig := postgres.Config{
+		Host:        env(envDBHost, defDBHost),
+		Port:        env(envDBPort, defDBPort),
+		User:        env(envDBUser, defDBUser),
+		Pass:        env(envDBPass, defDBPass),
+		Name:        env(envDBName, defDBName),
+		SSLMode:     env(envDBSSLMode, defDBSSLMode),
+		SSLCert:     env(envDBSSLCert, defDBSSLCert),
+		SSLKey:      env(envDBSSLKey, defDBSSLKey),
+		SSLRootCert: env(envDBSSLRootCert, defDBSSLRootCert),
+	}
+
+	cfg.dbConfig = dbConfig
 	cfg.serviceName = env(envServiceName, defServiceName)
 	cfg.logLevel = env(envLogLevel, defLogLevel)
 	cfg.serviceHost = env(envServiceHost, defServiceHost)
 	cfg.httpPort = env(envHTTPPort, defHTTPPort)
 	return cfg
+}
+
+func connectToDB(cfg postgres.Config, logger log.Logger) *sqlx.DB {
+	db, err := postgres.Connect(cfg)
+	if err != nil {
+		level.Error(logger).Log(
+			"host", cfg.Host,
+			"port", cfg.Port,
+			"user", cfg.User,
+			"dbname", cfg.Name,
+			"password", cfg.Pass,
+			"sslmode", cfg.SSLMode,
+			"SSLCert", cfg.SSLCert,
+			"SSLKey", cfg.SSLKey,
+			"SSLRootCert", cfg.SSLRootCert,
+			"err", err,
+		)
+		os.Exit(1)
+	}
+	return db
 }
 
 func NewServer(logger log.Logger) service.FooService {
